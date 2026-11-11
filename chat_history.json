@@ -1,0 +1,21 @@
+{
+    "user_name": null,
+    "messages": [
+        {
+            "role": "user",
+            "content": "مرحب"
+        },
+        {
+            "role": "assistant",
+            "content": "يا رنا حصل خطأ بسيط في الاتصال: [Errno 11001] getaddrinfo failed"
+        },
+        {
+            "role": "user",
+            "content": "كيف الحال"
+        },
+        {
+            "role": "assistant",
+            "content": "يا رنا حصل خطأ بسيط في الاتصال: 401 UNAUTHENTICATED. {'error': {'code': 401, 'message': 'API key not valid. Please pass a valid API key.', 'status': 'UNAUTHENTICATED', 'details': [{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'ACCESS_TOKEN_TYPE_UNSUPPORTED', 'metadata': {'method': 'google.ai.generativelanguage.v1beta.GenerativeService.GenerateContent', 'service': 'generativelanguage.googleapis.com'}}]}}"
+        }
+    ]
+}
