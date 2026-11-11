@@ -25,60 +25,58 @@ import random
 import pandas as pd
 import streamlit as st
 
-# إعداد الصفحة وتوجيه النص من اليمين لليسار (RTL)
+# إعداد الصفحة وتوجيه النص من اليمين لليسار (RTL) مع إخفاء القائمة الجانبية وأيقونات الـ GitHub والقلم العلوية
 st.set_page_config(
     page_title="شيف نانو - مساعدك الذكي في المطبخ", page_icon="🍳", layout="centered"
 )
 
-# تصميم الواجهة بالألوان الدافئة واتجاه اليمين لليسار
 st.markdown(
     """
 <style>
+    /* إخفاء شريط أدوات Streamlit العلوي (أيقونة GitHub، القلم، المشاركة) */
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    
     .stApp {
         background: linear-gradient(135deg, #FFF5EC 0%, #FEEBE2 50%, #FCE4D6 100%);
         color: #2D3748;
         direction: rtl;
         text-align: right;
     }
-    [data-testid="stSidebar"] {
-        background-color: #ffffff !important;
-        border-right: 1px solid #fed7aa;
-        direction: rtl;
-        text-align: right;
-    }
     .header-box {
         background: linear-gradient(135deg, #FF7A00 0%, #FF4D00 100%);
-        padding: 25px;
+        padding: 20px;
         border-radius: 20px;
         color: white;
         text-align: center;
         box-shadow: 0 8px 20px rgba(255, 122, 0, 0.2);
-        margin-bottom: 25px;
+        margin-bottom: 20px;
     }
     .header-title {
-        font-size: 28px;
+        font-size: 24px;
         font-weight: bold;
-        margin-bottom: 8px;
+        margin-bottom: 5px;
     }
     .header-sub {
-        font-size: 14px;
+        font-size: 13px;
         opacity: 0.9;
     }
     .card {
         background-color: #ffffff;
-        padding: 25px;
+        padding: 20px;
         border-radius: 18px;
         box-shadow: 0 4px 15px rgba(255, 100, 0, 0.08);
-        margin-bottom: 20px;
+        margin-bottom: 15px;
         border-right: 6px solid #FF7A00;
         direction: rtl;
         text-align: right;
     }
     .recipe-title {
         color: #C2410C;
-        font-size: 24px;
+        font-size: 22px;
         font-weight: bold;
-        margin-bottom: 15px;
+        margin-bottom: 10px;
     }
     p, span, div, label, h3 {
         direction: rtl;
@@ -89,7 +87,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# الترويسة العلوية المطابقة للتصميم المطلوب
+# الترويسة العلوية
 st.markdown(
     """
     <div class="header-box">
@@ -101,11 +99,9 @@ st.markdown(
 )
 
 
-# دالة ذكية لفهم المرادفات وتوزيع الأسئلة على القوائم بدقة
+# دالة الردود الذكية
 def get_smart_response(user_text):
   text_lower = user_text.lower()
-
-  # 1. كيف الحال والأخبار
   if any(
       w in text_lower
       for w in [
@@ -118,8 +114,6 @@ def get_smart_response(user_text):
       ]
   ):
     return random.choice(how_are_you_pool)
-
-  # 2. تعلم الطبخ والأساسيات
   elif any(
       w in text_lower
       for w in [
@@ -128,27 +122,19 @@ def get_smart_response(user_text):
           "فن الطبخ",
           "أعلمني الطبخ",
           "مبتدئ",
-          " عايزا اتعلم الطبيخ",
-          "عايزا اعرف الطبخ",
-          "حابة اتعلم الطبيخ",
-          "عايزا اعرف اساسيات الطبخ",
-          "علمني كيف اطبخ",
-          "كيف اقدراطبخ",
-          "علمني الطبيخ",
-          "كيف اطبخ",
-          "عايزا اطبخ",
 
+          "عايزا أتعلم الطبخ",
+          " علمني الطبخ",
+          "عايزا اعرف الطبخ",
+          "وريني كيف اطبخ",
+          "عايزا اعرف الطبيخ ",
       ]
   ):
     return random.choice(learn_cooking_pool)
-
-  # 3. طلب نصيحة طبخ
   elif any(
       w in text_lower for w in ["نصيحة طبخ", "نصيحة للمطبخ", "أعطيني نصيحة"]
   ):
     return random.choice(cooking_tips_pool)
-
-  # 4. اقترح لي وصفة / على ذوقك
   elif any(
       w in text_lower
       for w in [
@@ -161,8 +147,6 @@ def get_smart_response(user_text):
       ]
   ):
     return random.choice(suggest_recipe_pool)
-
-  # 5. الترحيب العام
   elif any(
       w in text_lower
       for w in [
@@ -178,22 +162,16 @@ def get_smart_response(user_text):
       ]
   ):
     return random.choice(greetings_pool)
-
-  # 6. الهوية والتعريف
   elif any(
       w in text_lower
       for w in ["من انت", "مين انت", "اسمك", "تعريف", "عرفني", "شيف", "نانو"]
   ):
     return random.choice(identity_pool)
-
-  # 7. المساعدة
   elif any(
       w in text_lower
       for w in ["تساعد", "خدماتك", "مساعدة", "تقدر تسوي", "شنو", "عمل شنو"]
   ):
     return random.choice(help_pool)
-
-  # 8. مكونات الثلاجة
   elif any(
       w in text_lower
       for w in [
@@ -208,66 +186,42 @@ def get_smart_response(user_text):
       ]
   ):
     return random.choice(ingredients_pool)
-
-  # 9. طلب الوصفات وطريقة الطبخ
   elif any(
       w in text_lower for w in ["طريقة", "كيف أعمل", "كيف أطبخ", "وصفة", "أريد طبخ"]
   ):
     return random.choice(recipe_request_pool)
-
-  # 10. الأكل الباظ وإصلاحه
   elif any(
       w in text_lower
       for w in ["باظ", "حرق", "ملح", "خرب", "إصلاح", "معجن", "حامض"]
   ):
     return random.choice(fix_food_pool)
-
-  # 11. الدايت والسعرات
   elif any(
       w in text_lower for w in ["دايت", "سعرات", "صحي", "رجيم", "وزن", "بروتين"]
   ):
     return random.choice(diet_pool)
-
-  # 12. الجدول الأسبوعي
   elif any(w in text_lower for w in ["جدول", "أسبوعي", "فطور وغدا", "تخطيط"]):
     return random.choice(weekly_plan_pool)
-
-  # 13. البدائل
   elif any(
       w in text_lower for w in ["بديل", "مافي", "بدون", "لا توجد", "مفروش"]
   ):
     return random.choice(substitutes_pool)
-
-  # 14. العزومات
   elif any(w in text_lower for w in ["عزومة", "عزومات", "ضيوف", "مفاجئين"]):
     return random.choice(عزومات_pool)
-
-  # 15. الأكل المستعجل
   elif any(w in text_lower for w in ["سريع", "مستعجل", "بسرعة", "دقايق"]):
     return random.choice(fast_food_pool)
-
-  # 16. التخزين
   elif any(w in text_lower for w in ["تخزين", "حفظ", "فريزر", "تفريز"]):
     return random.choice(storage_pool)
-
-  # 17. العصويات والحلويات
   elif any(
       w in text_lower for w in ["عصير", "كركديه", "حلويات", "مديدة", "حلو"]
   ):
     return random.choice(sweets_drinks_pool)
-
-  # 18. المقادير
   elif any(w in text_lower for w in ["مقادير", "قياس", "كوب", "جرام", "ملعقة"]):
     return random.choice(measurements_pool)
-
-  # 19. الأسئلة الخارجية
   elif any(
       w in text_lower
       for w in ["سياسة", "كورة", "تاريخ", "رياضة", "برمجة", "فيزياء"]
   ):
     return random.choice(outside_pool)
-
-  # الرد الافتراضي
   else:
     return (
         f"يا زول ابشر! بالنسبة لطلبك ({user_text})، اقترح علي مكونات متاحة أو"
@@ -297,48 +251,50 @@ if "messages" not in st.session_state:
       ),
   }]
 
-# القائمة الجانبية
-st.sidebar.header("⚙️ خيارات التصفية والتحكم")
-search_mode = st.sidebar.radio(
-    "اختر نمط البحث:",
+# تحويل الخيارات لتكون في أعلى الصفحة (بدلاً من القائمة الجانبية لتناسب الجوالات)
+st.markdown("### ⚙️ لوحة التحكم وخيارات البحث")
+search_mode = st.radio(
+    "اختر النمط:",
     (
         "البحث بالمكونات المتوفرة",
         "البحث باسم الوصفة",
         "دردشة الشيف الذكي 🤖",
     ),
-    key="sidebar_mode_final_v4",
+    horizontal=True,
+    key="top_nav_mode",
 )
 
-max_time = 120
-if "prep_time" in df.columns:
-  df["prep_time"] = pd.to_numeric(df["prep_time"], errors="coerce").fillna(60)
-  max_time = int(df["prep_time"].max())
-  time_filter = st.sidebar.slider(
-      "⏱️ الحد الأقصى لوقت التحضير (بالدقائق)",
-      5,
-      max_time,
-      max_time,
-      key="time_slider_final_v4",
-  )
-else:
-  time_filter = None
+# استخدام أعمدة مرتبة للتحكم في الوقت والصعوبة لتظهر بشكل جميل على الموبايل
+col1, col2 = st.columns(2)
 
-if "difficulty" in df.columns:
-  difficulty_options = ["الكل"] + list(df["difficulty"].dropna().unique())
-  difficulty_filter = st.sidebar.selectbox(
-      "📊 مستوى صعوبة الوصفة",
-      difficulty_options,
-      key="difficulty_box_final_v4",
-  )
-else:
-  difficulty_filter = "الكل"
+with col1:
+  max_time = 120
+  if "prep_time" in df.columns:
+    df["prep_time"] = pd.to_numeric(df["prep_time"], errors="coerce").fillna(60)
+    max_time = int(df["prep_time"].max())
+    time_filter = st.slider(
+        "⏱️ أقصى زمن للتحضير (دقيقة)", 5, max_time, max_time, key="time_filter_mob"
+    )
+  else:
+    time_filter = None
 
-if st.sidebar.button("🗑️ مسح ذاكرة الدردشة", key="clear_chat_btn_final_v4"):
+with col2:
+  if "difficulty" in df.columns:
+    difficulty_options = ["الكل"] + list(df["difficulty"].dropna().unique())
+    difficulty_filter = st.selectbox(
+        "📊 الصعوبة", difficulty_options, key="diff_filter_mob"
+    )
+  else:
+    difficulty_filter = "الكل"
+
+if st.button("🗑️ مسح ذاكرة الدردشة", key="clear_chat_mob"):
   st.session_state.messages = [{
       "role": "assistant",
       "content": "تم مسح الذاكرة بنجاح! أنا جاهز من جديد 🍽️.",
   }]
   st.rerun()
+
+st.markdown("---")
 
 # واجهة الاستخدام الرئيسية (الشات أو البحث)
 if search_mode == "دردشة الشيف الذكي 🤖":
@@ -349,8 +305,7 @@ if search_mode == "دردشة الشيف الذكي 🤖":
       st.markdown(message["content"])
 
   if user_chat_input := st.chat_input(
-      "اكتب سؤالك الآن... مثل: كيف أعد دجاج بالكاري بطريقة سهلة؟",
-      key="main_chat_input_final_v4",
+      "اكتب سؤالك هنا...", key="main_chat_input_mob"
   ):
     st.session_state.messages.append(
         {"role": "user", "content": user_chat_input}
@@ -368,14 +323,14 @@ if search_mode == "دردشة الشيف الذكي 🤖":
 else:
   if search_mode == "البحث بالمكونات المتوفرة":
     user_input = st.text_input(
-        "🍳 ما هي المكونات المتوفرة لديك؟", key="ingredients_input_final_v4"
+        "🍳 ما هي المكونات المتوفرة لديك؟", key="ingredients_input_mob"
     )
   else:
     user_input = st.text_input(
-        "🔍 ما هي الوصفة التي تبحث عنها؟", key="recipe_name_input_final_v4"
+        "🔍 ما هي الوصفة التي تبحث عنها؟", key="recipe_name_input_mob"
     )
 
-  if st.button("🚀 ابحث الآن", key="search_exec_btn_final_v4"):
+  if st.button("🚀 ابحث الآن", key="search_exec_btn_mob"):
     if not user_input.strip():
       st.warning("⚠️ يرجى إدخال كلمات للبحث أولاً!")
     else:
@@ -424,9 +379,9 @@ else:
           st.success("بالهناء والشفاء! 👩🍳")
         else:
           st.warning(
-              "🔍 اسف  الوصفة دي ما وقعت لي . ممكن تدخل مكونات اخري."
+              "🔍 عذراً، لم أجد وصفة مطابقة تماماً. حاول إدخال مكونات أخرى."
           )
 
-  if st.button("🔄 بحث جديد", key="reset_search_btn_final_v4"):
+  if st.button("🔄 بحث جديد", key="reset_search_btn_mob"):
     st.rerun()
 
