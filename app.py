@@ -1,387 +1,351 @@
-from chat_history import (
-    cooking_tips_pool,
-    diet_pool,
-    fast_food_pool,
-    fix_food_pool,
-    greetings_pool,
-    help_pool,
-    how_are_you_pool,
-    identity_pool,
-    ingredients_pool,
-    learn_cooking_pool,
-    measurements_pool,
-    outside_pool,
-    recipe_request_pool,
-    storage_pool,
-    substitutes_pool,
-    suggest_recipe_pool,
-    sweets_drinks_pool,
-    weekly_plan_pool,
-    عزومات_pool,
-)
+import streamlit as st
+import pandas as pd
 import json
 import os
 import random
-import pandas as pd
-import streamlit as st
-
-# إعداد الصفحة وتوجيه النص من اليمين لليسار (RTL) مع إخفاء القائمة الجانبية وأيقونات الـ GitHub والقلم العلوية
-st.set_page_config(
-    page_title="شيف نانو - مساعدك الذكي في المطبخ", page_icon="🍳", layout="centered"
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+st.set_page_config(page_title="شيف تكة تركة الذكي", page_icon="🥘", layout="centered")
+# استيراد الردود من ملفك الخاص
+from chat_history import (
+    greetings_pool, help_pool, how_are_you_pool, identity_pool,
+    ingredients_pool, learn_cooking_pool, cooking_tips_pool,
+    suggest_recipe_pool, fast_food_pool, storage_pool
 )
 
-st.markdown(
-    """
+# ==========================================
+# 1. إعدادات الصفحة الأساسية
+# ==========================================
+st.set_page_config(page_title="شيف تكة تركة الذكي", page_icon="🥘", layout="centered")
+
+# ==========================================
+# 2. التصميم والألوان (أخضر وأبيض - RTL)
+# ==========================================
+st.markdown("""
 <style>
-    /* إخفاء شريط أدوات Streamlit العلوي (أيقونة GitHub، القلم، المشاركة) */
-    #MainMenu {visibility: hidden;}
-    header {visibility: hidden;}
-    footer {visibility: hidden;}
-    
+    /* 1. الخلفية الخضراء الفاتحة (نفس لون الصورة) */
     .stApp {
-        background: linear-gradient(135deg, #FFF5EC 0%, #FEEBE2 50%, #FCE4D6 100%);
-        color: #2D3748;
-        direction: rtl;
-        text-align: right;
+        background-color: #D4EDDA !important; /* لون أخضر فاتح جداً ومريح */
+        direction: rtl !important;
+        text-align: right !important;
     }
-    .header-box {
-        background: linear-gradient(135deg, #FF7A00 0%, #FF4D00 100%);
-        padding: 20px;
-        border-radius: 20px;
-        color: white;
-        text-align: center;
-        box-shadow: 0 8px 20px rgba(255, 122, 0, 0.2);
-        margin-bottom: 20px;
+
+    /* 2. تثبيت لون خانة الإدخال (البحث) لتكون بيضاء دائماً */
+    .stTextInput > div > div > input, .stTextArea > div > div > textarea {
+        background-color: #FFFFFF !important; /* خلفية بيضاء */
+        color: #000000 !important;            /* لون النص أسود */
+        border: 2px solid #388E3C !important; /* إطار أخضر غامق */
+        border-radius: 10px !important;
+        direction: rtl !important;
+        text-align: right !important;
     }
-    .header-title {
-        font-size: 24px;
-        font-weight: bold;
-        margin-bottom: 5px;
+
+    /* 3. تثبيت لون الأزرار (ابحث الآن / بحث جديد) */
+    .stButton > button {
+        background-color: #FFFFFF !important; /* خلفية بيضاء */
+        color: #1E5128 !important;            /* لون النص أخضر غامق */
+        border: 2px solid #4CAF50 !important; /* إطار أخضر */
+        border-radius: 10px !important;
+        font-weight: bold !important;
+        width: 100%;
+        padding: 10px !important;
+        transition: all 0.3s ease;
     }
-    .header-sub {
-        font-size: 13px;
-        opacity: 0.9;
+
+    /* 4. تأثير عند تمرير الماوس على الأزرار */
+    .stButton > button:hover {
+        background-color: #4CAF50 !important; /* تتحول لأخضر لما تقف عليها */
+        color: #FFFFFF !important;            /* والنص يبقى أبيض */
+        border: 2px solid #388E3C !important;
     }
+
+    /* 5. إصلاح أي نصوص أو عناوين عشان تبان */
+    p, span, div, label, h1, h2, h3, h4, .stMarkdown {
+        color: #1E5128 !important; /* نص بلون أخضر غامق عشان يبان على الخلفية الفاتحة */
+        direction: rtl !important;
+        text-align: right !important;
+    }
+
+    /* 6. لوحة التحكم (الكروت الخاصة بالوصفات) */
     .card {
-        background-color: #ffffff;
-        padding: 20px;
-        border-radius: 18px;
-        box-shadow: 0 4px 15px rgba(255, 100, 0, 0.08);
-        margin-bottom: 15px;
-        border-right: 6px solid #FF7A00;
-        direction: rtl;
-        text-align: right;
+        background-color: #FFFFFF !important;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+        border-right: 6px solid #388E3C !important; /* شريط جانبي أخضر */
+        direction: rtl !important;
+        text-align: right !important;
     }
+
+    /* 7. لون عنوان الوصفة داخل الكارت */
     .recipe-title {
-        color: #C2410C;
+        color: #2E7D32 !important; /* أخضر غامق */
         font-size: 22px;
         font-weight: bold;
         margin-bottom: 10px;
     }
-    p, span, div, label, h3 {
-        direction: rtl;
-        text-align: right;
-    }
+
+
+/* تنسيق العنوان الرئيسي (كبير جداً) */
+.header-title-main { 
+    font-size: 36px !important; /* حجم خط كبير جداً */
+    font-weight: 900 !important; 
+    margin-bottom: 15px !important; 
+    color: white !important; 
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.2); /* ظل خفيف عشان يبرز */
+}
+
+/* تنسيق العنوان الفرعي (أصغر شوية من الرئيسي) */
+.header-title-sub { 
+    font-size: 22px !important; /* حجم خط متوسط وكبير */
+    font-weight: bold !important;
+    margin-bottom: 20px !important; 
+    color:SeaGreen!important; 
+    opacity: 0.95;
+}
+
 </style>
-""",
-    unsafe_allow_html=True,
-)
-
-# الترويسة العلوية
-st.markdown(
-    """
-    <div class="header-box">
-        <div class="header-title">👨🍳 شيف نانو - مساعدك الذكي في المطبخ</div>
-        <div class="header-sub">مساعدك الذكي لتحضير وصفات لذيذة • خطوات سهلة • نصائح فورية</div>
-    </div>
-""",
-    unsafe_allow_html=True,
-)
+""", unsafe_allow_html=True)
 
 
-# دالة الردود الذكية
+
+# ==========================================
+# 3. دالة الردود الذكية (تربط بملف chat_history)
+# ==========================================
 def get_smart_response(user_text):
-  text_lower = user_text.lower()
-  if any(
-      w in text_lower
-      for w in [
-          "كيف الحال",
-          "كيفك",
-          "كيف اخبارك",
-          "كيف الصحة",
-          "أخبارك",
-          "عامل شنو",
-      ]
-  ):
-    return random.choice(how_are_you_pool)
-  elif any(
-      w in text_lower
-      for w in [
-          "أتعلم الطبخ",
-          "أساسيات الطبخ",
-          "فن الطبخ",
-          "أعلمني الطبخ",
-          "مبتدئ",
+    text_lower = user_text.lower()
+    
+    # الترحيب
+    if any(w in text_lower for w in ["مرحب", "مرحبا", "مرحبتين", "هلا", "أهلاً", "ازيك", "كيف حالك", "صباح", "مساء"]):
+        return random.choice(greetings_pool)
+    # كيف الحال
+    elif any(w in text_lower for w in ["كيف الحال", "كيف", "كيف اخبارك", "كيف الصحة", "أخبارك", "عامل شنو"]):
+        return random.choice(how_are_you_pool)
+    # التعريف بالنفس
+    elif any(w in text_lower for w in ["من انت", "مين انت", "اسمك", "عرفني"]):
+        return random.choice(identity_pool)
+    # المساعدة
+    elif any(w in text_lower for w in ["مساعدة", "خدماتك", "ساعد", "تعمل شنو"]):
+        return random.choice(help_pool)
+    # المكونات
+    elif any(w in text_lower for w in ["عندي", "الثلاجة", "مكونات", "لحمة", "دجاج", "بامية", "بصل", "بطاطس"]):
+        return random.choice(ingredients_pool)
+    # تعلم الطبخ
+    elif any(w in text_lower for w in ["أتعلم الطبخ", "أساسيات الطبخ", "فن الطبخ", "علمني الطبخ", "مبتدئ"]):
+        return random.choice(learn_cooking_pool)
+    # نصائح طبخ
+    elif any(w in text_lower for w in ["نصيحة طبخ"]):
+        return random.choice(cooking_tips_pool)
+    # اقتراح وصفات
+    elif any(w in text_lower for w in ["اقترح لي", "رشح لي", "على ذوقك", "أكلة على ذوقك", "ناكل شنو", "اطبخ شنو"]):
+        return random.choice(suggest_recipe_pool)
+    # أكل سريع
+    elif any(w in text_lower for w in ["سريع", "مستعجل", "وجبة سريعة"]):
+        return random.choice(fast_food_pool)
+    # تخزين
+    elif any(w in text_lower for w in ["تخزين", "حفظ", "الثلاجة"]):
+        return random.choice(storage_pool)
+    
+    # رد افتراضي لو ملقاش حاجة
+    else:
+        return f"معلش يا شيف، مش متأكد من ({user_text}). ممكن تسألني عن وصفة معينة، أو مكونات عندك، أو تطلب نصيحة طبخ! 🥘"
 
-          "عايزا أتعلم الطبخ",
-          " علمني الطبخ",
-          "عايزا اعرف الطبخ",
-          "وريني كيف اطبخ",
-          "عايزا اعرف الطبيخ ",
-      ]
-  ):
-    return random.choice(learn_cooking_pool)
-  elif any(
-      w in text_lower for w in ["نصيحة طبخ", "نصيحة للمطبخ", "أعطيني نصيحة"]
-  ):
-    return random.choice(cooking_tips_pool)
-  elif any(
-      w in text_lower
-      for w in [
-          "اقترح لي",
-          "رشح لي",
-          "على ذوقك",
-          "أكلة على ذوقك",
-          "ناكل شنو",
-          "اطبخ شنو",
-      ]
-  ):
-    return random.choice(suggest_recipe_pool)
-  elif any(
-      w in text_lower
-      for w in [
-          "مرحب",
-          "مرحبا",
-          "مرحبتين",
-          "هلا",
-          "أهلاً",
-          "ازيك",
-          "كيف حالك",
-          "صباح",
-          "مساء",
-      ]
-  ):
-    return random.choice(greetings_pool)
-  elif any(
-      w in text_lower
-      for w in ["من انت", "مين انت", "اسمك", "تعريف", "عرفني", "شيف", "نانو"]
-  ):
-    return random.choice(identity_pool)
-  elif any(
-      w in text_lower
-      for w in ["تساعد", "خدماتك", "مساعدة", "تقدر تسوي", "شنو", "عمل شنو"]
-  ):
-    return random.choice(help_pool)
-  elif any(
-      w in text_lower
-      for w in [
-          "عندي",
-          "الثلاجة",
-          "مكونات",
-          "لحمة",
-          "دجاج",
-          "بامية",
-          "بصل",
-          "بطاطس",
-      ]
-  ):
-    return random.choice(ingredients_pool)
-  elif any(
-      w in text_lower for w in ["طريقة", "كيف أعمل", "كيف أطبخ", "وصفة", "أريد طبخ"]
-  ):
-    return random.choice(recipe_request_pool)
-  elif any(
-      w in text_lower
-      for w in ["باظ", "حرق", "ملح", "خرب", "إصلاح", "معجن", "حامض"]
-  ):
-    return random.choice(fix_food_pool)
-  elif any(
-      w in text_lower for w in ["دايت", "سعرات", "صحي", "رجيم", "وزن", "بروتين"]
-  ):
-    return random.choice(diet_pool)
-  elif any(w in text_lower for w in ["جدول", "أسبوعي", "فطور وغدا", "تخطيط"]):
-    return random.choice(weekly_plan_pool)
-  elif any(
-      w in text_lower for w in ["بديل", "مافي", "بدون", "لا توجد", "مفروش"]
-  ):
-    return random.choice(substitutes_pool)
-  elif any(w in text_lower for w in ["عزومة", "عزومات", "ضيوف", "مفاجئين"]):
-    return random.choice(عزومات_pool)
-  elif any(w in text_lower for w in ["سريع", "مستعجل", "بسرعة", "دقايق"]):
-    return random.choice(fast_food_pool)
-  elif any(w in text_lower for w in ["تخزين", "حفظ", "فريزر", "تفريز"]):
-    return random.choice(storage_pool)
-  elif any(
-      w in text_lower for w in ["عصير", "كركديه", "حلويات", "مديدة", "حلو"]
-  ):
-    return random.choice(sweets_drinks_pool)
-  elif any(w in text_lower for w in ["مقادير", "قياس", "كوب", "جرام", "ملعقة"]):
-    return random.choice(measurements_pool)
-  elif any(
-      w in text_lower
-      for w in ["سياسة", "كورة", "تاريخ", "رياضة", "برمجة", "فيزياء"]
-  ):
-    return random.choice(outside_pool)
-  else:
-    return (
-        f"معليش بنسبة لي  ({user_text})، اقترح علي مكونات متاحة أو"
-        "  ما وقعت في اكتب اسم الوصفة وسأساعدك فوراً بتكة وتظبط!"
-    )
-
-
-# تحميل ملف الوصفات
+# ==========================================
+# 4. تحميل البيانات (ملف recipes.json)
+# ==========================================
 try:
-  with open("recipes.json", "r", encoding="utf-8") as f:
-    data = json.load(f)
-  if isinstance(data, dict) and "recipes" in data:
-    df = pd.DataFrame(data["recipes"])
-  else:
-    df = pd.DataFrame(data)
+    with open("recipes.json", "r", encoding="utf-8") as f:
+        data = json.load(f)
+    if isinstance(data, dict) and "recipes" in data:
+        df = pd.DataFrame(data["recipes"])
+    else:
+        df = pd.DataFrame(data)
 except FileNotFoundError:
-  st.error("خطأ: لم يتم العثور على ملف recipes.json.")
-  st.stop()
+    st.error("⚠️ خطأ: لم يتم العثور على ملف recipes.json. تأكد من وجوده في نفس المجلد.")
+    st.stop()
 
-# إعداد ذاكرة الدردشة في الـ Session State
+# ==========================================
+# 5. إعداد ذاكرة الدردشة
+# ==========================================
 if "messages" not in st.session_state:
-  st.session_state.messages = [{
-      "role": "assistant",
-      "content": (
-          "أنا شيف نانو، مساعدك الذكي في المطبخ\nكيف يمكنني مساعدتك اليوم؟ اطلب"
-          " وصفة، اقترح مكونات متاحة، أو اسأل عن نصيحة طهي - وسأرد عليك فوراً!"
-      ),
-  }]
+    st.session_state.messages = [{
+        "role": "assistant",
+        "content": "مرحباً بك في شيف تكة تركة الذكي! 🥘🍔🍹🧑🍳\nأنا مساعدك الذكي في المطبخ. عن طريق الخيارات يمكنني مساعدتك في:\n- تجهيز وصفة حسب اسم الوصفة 🧆\n- بحث عن طريق المكونات الموجودة 🍆🧂\n- ويمكننا الدردشة معاً وكأننا صديق طبخ! 👨🍳"
+    }]
 
-# تحويل الخيارات لتكون في أعلى الصفحة (بدلاً من القائمة الجانبية لتناسب الجوالات)
-st.markdown("### ⚙️ لوحة التحكم وخيارات البحث")
-search_mode = st.radio(
-    "اختر النمط:",
-    (
-        "البحث بالمكونات المتوفرة",
-        "البحث باسم الوصفة",
-        "دردشة الشيف الذكي 🤖",
-    ),
-    horizontal=True,
-    key="top_nav_mode",
-)
+# ==========================================
+# 6. بناء واجهة المستخدم
+# ==========================================
 
-# استخدام أعمدة مرتبة للتحكم في الوقت والصعوبة لتظهر بشكل جميل على الموبايل
+# الهيدر / الترويسة العلوية (مطابق للصورة اللي بعتها)
+st.markdown("""
+<div class="header-container">
+    <div class="header-title-main">👨🍵 شيف تكة تركة الذكي 🥘</div>
+    <div class="header-title-sub">أنا شيف تكة الذكي 🍜🥙🧑 مساعدك الذكي في المطبخ</div>
+    <div class="header-list">
+        عن طريق الخيارات يمكنني مساعدتك:<br>
+        🍝🍴 تجهيز وصفة حسب اسم الوصفة<br>
+        🍆🍏🍒 بحث عن طريق المكونات الموجودة<br>
+        👨🍜 ويمكننا الدردشة معاً وكأننا صديق طبخ<br>
+        مرحباً بك! 🥞🍔🥙🧆🍝🍛 🍜🍤🍩🍰🍵
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+# ==========================================
+# 1. لوحة التحكم
+# ==========================================
+st.markdown('### ⚙️ لوحة التحكم وخيارات البحث')
+
+# ==========================================
+# 2. التحكم في الوقت والمستوى
+# ==========================================
 col1, col2 = st.columns(2)
 
 with col1:
-  max_time = 120
-  if "prep_time" in df.columns:
-    df["prep_time"] = pd.to_numeric(df["prep_time"], errors="coerce").fillna(60)
-    max_time = int(df["prep_time"].max())
-    time_filter = st.slider(
-        "⏱️ أقصى زمن للتحضير (دقيقة)", 5, max_time, max_time, key="time_filter_mob"
-    )
-  else:
-    time_filter = None
+    max_time = 120
+    if "prep_time" in df.columns:
+        df["prep_time"] = pd.to_numeric(df["prep_time"], errors='coerce').fillna(0)
+        max_time = int(df["prep_time"].max()) if df["prep_time"].max() > 0 else 120
+        time_filter = st.slider("⏱️ أقصى زمن للتحضير (دقيقة)", 5, max_time, 60)
+    else:
+        time_filter = None
 
 with col2:
-  if "difficulty" in df.columns:
-    difficulty_options = ["الكل"] + list(df["difficulty"].dropna().unique())
-    difficulty_filter = st.selectbox(
-        "📊 الصعوبة", difficulty_options, key="diff_filter_mob"
-    )
-  else:
-    difficulty_filter = "الكل"
-
-if st.button("🗑️ مسح ذاكرة الدردشة", key="clear_chat_mob"):
-  st.session_state.messages = [{
-      "role": "assistant",
-      "content": "تم مسح الذاكرة بنجاح! أنا جاهز من جديد 🍽️.",
-  }]
-  st.rerun()
-
-st.markdown("---")
-
-# واجهة الاستخدام الرئيسية (الشات أو البحث)
-if search_mode == "دردشة الشيف الذكي 🤖":
-  st.markdown("### 💬 دردشة تفاعلية مع الشيف")
-
-  for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-      st.markdown(message["content"])
-
-  if user_chat_input := st.chat_input(
-      "اكتب سؤالك هنا...", key="main_chat_input_mob"
-  ):
-    st.session_state.messages.append(
-        {"role": "user", "content": user_chat_input}
-    )
-    with st.chat_message("user"):
-      st.markdown(user_chat_input)
-
-    with st.chat_message("assistant"):
-      ai_response = get_smart_response(user_chat_input)
-      st.markdown(ai_response)
-      st.session_state.messages.append(
-          {"role": "assistant", "content": ai_response}
-      )
-
-else:
-  if search_mode == "البحث بالمكونات المتوفرة":
-    user_input = st.text_input(
-        "🍳 ما هي المكونات المتوفرة لديك؟", key="ingredients_input_mob"
-    )
-  else:
-    user_input = st.text_input(
-        "🔍 ما هي الوصفة التي تبحث عنها؟", key="recipe_name_input_mob"
-    )
-
-  if st.button("🚀 ابحث الآن", key="search_exec_btn_mob"):
-    if not user_input.strip():
-      st.warning("⚠️ يرجى إدخال كلمات للبحث أولاً!")
+    if "difficulty" in df.columns:
+        difficulty_options = ["الكل"] + list(df["difficulty"].dropna().unique())
+        difficulty_filter = st.selectbox("📊 الصعوبة", difficulty_options, key="diff_filter")
     else:
-      filtered_df = df.copy()
+        difficulty_filter = "الكل"
 
-      if time_filter and "prep_time" in filtered_df.columns:
-        filtered_df = filtered_df[filtered_df["prep_time"] <= time_filter]
-      if (
-          difficulty_filter != "الكل"
-          and "difficulty" in filtered_df.columns
-      ):
-        filtered_df = filtered_df[
-            filtered_df["difficulty"] == difficulty_filter
-        ]
+st.markdown("---") # خط فاصل
 
-      if filtered_df.empty:
-        st.warning("⚠️ لا توجد وصفات تطابق خيارات التصفية ☹️")
-      else:
-        from sklearn.feature_extraction.text import TfidfVectorizer
-        from sklearn.metrics.pairwise import cosine_similarity
+# ==========================================
+# 3. اختيار النمط (التبويبات المتباعدة)
+# ==========================================
+search_mode = st.radio(
+    "اختار النمط:", 
+    (
+        "بحث بالمكونات🍏🍒", 
+        "بحث باسم الوصفة🧆", 
+        "دردشة الشيف👨🍴"
+    ),
+    horizontal=True,
+    key="top_nav_mode",
+    label_visibility="collapsed" # نخفي كلمة "اختار النمط" عشان التصميم
+)
 
-        vectorizer = TfidfVectorizer()
-        if search_mode == "البحث باسم الوصفة":
-          target_column = filtered_df["name"].astype(str)
+st.markdown("<br>", unsafe_allow_html=True) # مسافة صغيرة
+
+# ==========================================
+# 4. واجهة الاستخدام (حسب الاختيار)
+# ==========================================
+
+# --- البحث بالمكونات ---
+if search_mode == "بحث بالمكونات🍏🍒":
+    st.markdown("### 🔍 ابحث بالمكونات المتوفرة لديك")
+    user_input_ing = st.text_input("اكتب المكونات (مثال: بصل، طماطم، لحمة):", key="ing_search_input")
+    
+    if st.button("🚀 ابحث عن وصفة", key="search_ing_btn"):
+        if not user_input_ing.strip():
+            st.warning("⚠️ يرجى إدخال المكونات أولاً!")
         else:
-          target_column = filtered_df["ingredients"].astype(str)
+            filtered_df = df.copy()
+            if time_filter and "prep_time" in filtered_df.columns:
+                filtered_df = filtered_df[filtered_df["prep_time"] <= time_filter]
+            if difficulty_filter != "الكل" and "difficulty" in filtered_df.columns:
+                filtered_df = filtered_df[filtered_df["difficulty"] == difficulty_filter]
 
-        X = vectorizer.fit_transform(target_column)
-        user_vec = vectorizer.transform([user_input])
-        similarity = cosine_similarity(user_vec, X)
-        idx = similarity[0].argmax()
+            if filtered_df.empty:
+                st.warning("⚠️ لا توجد وصفات تطابق الفلاتر.")
+            else:
+                vectorizer = TfidfVectorizer(token_pattern=r'\b\w+\b')
+                target_column = filtered_df["ingredients"].fillna("")
+                X = vectorizer.fit_transform(target_column)
+                user_vec = vectorizer.transform([user_input_ing])
+                similarity = cosine_similarity(user_vec, X)
+                idx = similarity[0].argmax()
 
-        if similarity[0][idx] > 0.12:
-          r = filtered_df.iloc[idx]
-          st.markdown(
-              f"""
-                    <div class='card'>
-                        <div class='recipe-title'>🍽️ {r.get('name', 'وصفة مميزة')}</div>
-                        <p><b>المكونات:</b> {r.get('ingredients', '')}</p>
-                        <p><b>الخطوات:</b><br>{r.get('steps', '')}</p>
-                        <p>⏱️ <b>زمن التحضير:</b> {r.get('prep_time', 'غير محدد')} دقيقة</p>
-                    </div>
-                """,
-              unsafe_allow_html=True,
-          )
-          st.success("بالهناء والشفاء! 👩🍳")
+                if similarity[0][idx] > 0.01:
+                    r = filtered_df.iloc[idx]
+                    st.markdown(
+                        f"""
+                        <div class='card'>
+                            <div class='recipe-title'>🍽️ {r.get('name', 'وصفة')}</div>
+                            <p><b>المكونات:</b> {r.get('ingredients', 'غير متوفرة')}</p>
+                            <p><b>الخطوات:</b><br>{str(r.get('steps', 'غير متوفرة')).replace('.', '.<br>')}</p>
+                            <p>⏱️ <b>زمن التحضير:</b> {r.get('prep_time', 'غير محدد')} دقيقة</p>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+                    st.success("👨🍳 بالهناء والشفاء! 🍴")
+                else:
+                    st.warning("🔍 لا توجد وصفة مطابقة.")
+
+# --- البحث باسم الوصفة ---
+elif search_mode == "بحث باسم الوصفة🧆":
+    st.markdown("### 🔍 ابحث باسم الوصفة")
+    user_input_name = st.text_input("اكتب اسم الوصفة (مثال: شكشوكة، ملاح بامية):", key="name_search_input")
+    
+    if st.button("🚀 ابحث الآن", key="search_name_btn"):
+        if not user_input_name.strip():
+            st.warning("⚠️ يرجى إدخال اسم الوصفة أولاً!")
         else:
-          st.warning(
-              "🔍 عذراً، لم أجد وصفة مطابقة تماماً. حاول إدخال مكونات أخرى."
-          )
+            filtered_df = df.copy()
+            if time_filter and "prep_time" in filtered_df.columns:
+                filtered_df = filtered_df[filtered_df["prep_time"] <= time_filter]
+            if difficulty_filter != "الكل" and "difficulty" in filtered_df.columns:
+                filtered_df = filtered_df[filtered_df["difficulty"] == difficulty_filter]
 
-  if st.button("🔄 بحث جديد", key="reset_search_btn_mob"):
+            if filtered_df.empty:
+                st.warning("⚠️ لا توجد وصفات تطابق الفلاتر.")
+            else:
+                vectorizer = TfidfVectorizer(token_pattern=r'\b\w+\b')
+                target_column = filtered_df["name"].fillna("")
+                X = vectorizer.fit_transform(target_column)
+                user_vec = vectorizer.transform([user_input_name])
+                similarity = cosine_similarity(user_vec, X)
+                idx = similarity[0].argmax()
+
+                if similarity[0][idx] > 0.01:
+                    r = filtered_df.iloc[idx]
+                    st.markdown(
+                        f"""
+                        <div class='card'>
+                            <div class='recipe-title'>🍽️ {r.get('name', 'وصفة')}</div>
+                            <p><b>المكونات:</b> {r.get('ingredients', 'غير متوفرة')}</p>
+                            <p><b>الخطوات:</b><br>{str(r.get('steps', 'غير متوفرة')).replace('.', '.<br>')}</p>
+                            <p>⏱️ <b>زمن التحضير:</b> {r.get('prep_time', 'غير محدد')} دقيقة</p>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+                    st.success("👨🍳 بالهناء والشفاء! 🍴")
+                else:
+                    st.warning("🔍 لا توجد وصفة مطابقة.")
+
+# --- دردشة الشيف ---
+elif search_mode == "دردشة الشيف👨🍴":
+    st.markdown("### 💬 دردشة تفاعلية مع الشيف")
+    
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    if user_chat_input := st.chat_input("اكتب سؤالك هنا..."):
+        st.session_state.messages.append({"role": "user", "content": user_chat_input})
+        with st.chat_message("user"):
+            st.markdown(user_chat_input)
+        
+        with st.chat_message("assistant"):
+            ai_response = get_smart_response(user_chat_input)
+            st.markdown(ai_response)
+            st.session_state.messages.append({"role": "assistant", "content": ai_response})
+
+# زرار البحث الجديد
+st.markdown("---")
+if st.button("🔄 بحث جديد", key="reset_search"):
     st.rerun()
 
