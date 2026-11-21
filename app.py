@@ -104,6 +104,13 @@ st.markdown("""
     color:SeaGreen!important; 
     opacity: 0.95;
 }
+/* إخفاء أيقونة GitHub والقلم من الشريط العلوي */
+.stAppToolbar a[href*="github.com"], 
+.stAppToolbar button[aria-label="Edit"], 
+.stAppToolbar [data-testid="stAppViewBlockContainer"] button[kind="header"] {
+    display: none !important;
+}
+
 
 </style>
 """, unsafe_allow_html=True)
@@ -171,7 +178,7 @@ except FileNotFoundError:
 if "messages" not in st.session_state:
     st.session_state.messages = [{
         "role": "assistant",
-        "content": "مرحباً بك في شيف تكة تركة الذكي! 🥘🍔🍹🧑🍳\nأنا مساعدك الذكي في المطبخ. عن طريق الخيارات يمكنني مساعدتك في:\n- تجهيز وصفة حسب اسم الوصفة 🧆\n- بحث عن طريق المكونات الموجودة 🍆🧂\n- ويمكننا الدردشة معاً وكأننا صديق طبخ! 👨🍳"
+        "content": ("مرحباً بك في شيف تكة تركة الذكي! 🥘🍔🧑🍳\n""أنا مساعدك الذكي في المطبخ أسالني عن مكون او وصفة سودانية,حابب تاكل شنوا كدي خليني اساعدك🍜🍵,نبدا الدردشة اسالني عن الطبخ 🍝🍩🍰\n\n"" ويمكننا الدردشة معاً وكأننا صديق طبخ! 🍰👨")
     }]
 
 # ==========================================
