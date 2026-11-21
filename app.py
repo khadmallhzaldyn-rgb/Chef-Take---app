@@ -356,4 +356,14 @@ elif search_mode == "دردشة الشيف👨🍴":
 st.markdown("---")
 if st.button("🔄 بحث جديد", key="reset_search"):
     st.rerun()
-
+# إخفاء الشريط العلوي بالكامل (القلم، GitHub، النجمة، والثلاث نقاط)
+st.markdown(
+    """
+    <style>
+    header[data-testid="stHeader"] {
+        display: none !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+    )
